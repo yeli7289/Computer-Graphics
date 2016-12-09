@@ -765,8 +765,8 @@ void idle()
     // the colliding car will return to the original location
     // 1 if s bump into 1, and 0 if 1 bump into s.
       if (BumpInto(car_s, car1)==1){
-        car_s.x-=20*sdx;
-        car_s.z-=20*sdz;
+        car_s.x-=10*sdx;
+        car_s.z-=10*sdz;
         if (car_s.velocity>=3)
           car_s.velocity-=1.8;
         // direction+=30;
@@ -779,8 +779,8 @@ void idle()
       }
       else
       {
-        car1.x-=25*dx;
-        car1.z-=25*dz;
+        car1.x-=20*dx;
+        car1.z-=20*dz;
         if (car1.velocity>=3)
           car1.velocity-=1.8;
       }
@@ -934,7 +934,6 @@ void display()
   car(car1.x,0.5-dim,car1.z, 1.0, car1.dx, car1.dz);
   glDisable(GL_LIGHTING);
   glColor3f(1,0,0);
-  glWindowPos2i(5,5);
   glWindowPos2i(5,5);
   Print("Speed %f, road:%d, track:%d %d, %d %d", car_s.velocity*5, roadmode, car_s.lap, car_s.track, car1.lap, car1.track);
   glFlush();
