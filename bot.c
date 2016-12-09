@@ -40,6 +40,17 @@ bool doIntersect(tup p1, tup q1, tup p2, tup q2)
  
     return false; // Doesn't fall in any of the above cases
 }
+bool InsideCar(tup A, tup B[4])
+{
+	double m[2] = {A.x-B[0].x, A.z-B[0].z};
+	double b[2] = {B[1].x-B[0].x, B[1].z-B[0].z};
+	double d[2] = {B[3].x-B[0].x, B[3].z-B[0].z};
+	if (((m[0]*b[0]+m[1]*b[1]>=0)&&(b[0]*b[0]+b[1]*b[1]>=m[0]*b[0]+m[1]*b[1]))&&\
+		((m[0]*d[0]+m[1]*d[1]>=0)&&(d[0]*d[0]+d[1]*d[1]>=m[0]*d[0]+m[1]*d[1])))
+		return true;
+	else
+		return false;
+}
 bool CollideBoundary(bot_t A, tup right[], int lenR, tup left[])
 {
 	tup vertexA[4];
@@ -51,38 +62,29 @@ bool CollideBoundary(bot_t A, tup right[], int lenR, tup left[])
 	vertexA[2].z = A.z-0.5*A.box_x*A.dx-0.5*A.box_z*A.dz;
 	vertexA[3].x = A.x-0.5*A.box_x*A.dx-0.5*A.box_z*A.dz;
 	vertexA[3].z = A.z+0.5*A.box_x*A.dx-0.5*A.box_z*A.dz;
-	for (int i=0; i<lenR-1; i++)
+
+	if (lenR==2)
 	{
-		if (doIntersect(right[i], right[i+1], vertexA[0], vertexA[1]) ||\
-		   doIntersect(right[i], right[i+1], vertexA[1], vertexA[2]) ||\
-		   doIntersect(right[i], right[i+1], vertexA[2], vertexA[3]) ||\
-		   doIntersect(right[i], right[i+1], vertexA[3], vertexA[0])
-		   )
+		if (doIntersect(right[0], right[1], vertexA[0], vertexA[1]) ||\
+			doIntersect(right[0], right[1], vertexA[1], vertexA[2]) ||\
+			doIntersect(right[0], right[1], vertexA[2], vertexA[3]) ||\
+			doIntersect(right[0], right[1], vertexA[3], vertexA[0]) ||\
+			doIntersect(left[0], left[1], vertexA[0], vertexA[1]) ||\
+			doIntersect(left[0], left[1], vertexA[1], vertexA[2]) ||\
+			doIntersect(left[0], left[1], vertexA[2], vertexA[3]) ||\
+			doIntersect(left[0], left[1], vertexA[3], vertexA[0])
+			)
 			return true;
-		right+=1;
 	}
-	for (int i=0; i<lenR-1; i++)
+	else
 	{
-		if (doIntersect(left[i], left[i+1], vertexA[0], vertexA[1]) ||\
-		   doIntersect(left[i], left[i+1], vertexA[1], vertexA[2]) ||\
-		   doIntersect(left[i], left[i+1], vertexA[2], vertexA[3]) ||\
-		   doIntersect(left[i], left[i+1], vertexA[3], vertexA[0])
-		   )
+		for (int i=0;i<lenR;i++)
+		{
+		if (InsideCar(right[i],vertexA)||InsideCar(left[i],vertexA))
 			return true;
-		right+=1;
+		}	
 	}
 	return false;
-}
-bool InsideCar(tup A, tup B[4])
-{
-	double m[2] = {A.x-B[0].x, A.z-B[0].z};
-	double b[2] = {B[1].x-B[0].x, B[1].z-B[0].z};
-	double d[2] = {B[3].x-B[0].x, B[3].z-B[0].z};
-	if (((m[0]*b[0]+m[1]*b[1]>=0)&&(b[0]*b[0]+b[1]*b[1]>=m[0]*b[0]+m[1]*b[1]))&&\
-		((m[0]*d[0]+m[1]*d[1]>=0)&&(d[0]*d[0]+d[1]*d[1]>=m[0]*d[0]+m[1]*d[1])))
-		return true;
-	else
-		return false;
 }
 bool Collide(bot_t A, bot_t B)
 {

@@ -28,28 +28,14 @@ int height=800;
 #define dim 10.0
 
 track_in track_point[21];
-bot_t car1 = { .x=0.0, .y=-dim, .z=-4.0, .dx=0, .dz=-1, .velocity=0.05, .lap = 1, .track=1, .box_x=0.75, .box_z=1.0 };
-bot_t car_s = { .x=0, .y=-dim , .z=0, .dx=0, .dz=-1, .velocity=0.0, .lap = 1, .track=1, .box_x=0.75, .box_z=1.0 };
+bot_t car1 = { .x=0.0, .y=-dim, .z=0.0, .dx=0, .dz=-1, .velocity=3, .lap = 1, .track=1, .box_x=0.75, .box_z=1.0 };
+bot_t car_s = { .x=0, .y=-dim , .z=4.0, .dx=0, .dz=-1, .velocity=0.0, .lap = 1, .track=1, .box_x=0.75, .box_z=1.0 };
 // The linked list is used to keep track of the AI's route
 node_t head1;
 node_t *route1 = &head1;
 node_t *cur1 = &head1;
 float N[] = {0, -1, 0}; // Normal vector for the plane
 float E[] = {0, -dim, 0 }; // Point of the plane
-void ShadowProjection(float L[4], float E[4], float N[4])
-{
-   float mat[16];
-   float e = E[0]*N[0] + E[1]*N[1] + E[2]*N[2];
-   float l = L[0]*N[0] + L[1]*N[1] + L[2]*N[2];
-   float c = e - l;
-   //  Create the matrix.
-   mat[0] = N[0]*L[0]+c; mat[4] = N[1]*L[0];   mat[8]  = N[2]*L[0];   mat[12] = -e*L[0];
-   mat[1] = N[0]*L[1];   mat[5] = N[1]*L[1]+c; mat[9]  = N[2]*L[1];   mat[13] = -e*L[1];
-   mat[2] = N[0]*L[2];   mat[6] = N[1]*L[2];   mat[10] = N[2]*L[2]+c; mat[14] = -e*L[2];
-   mat[3] = N[0];        mat[7] = N[1];        mat[11] = N[2];        mat[15] = -l;
-   //  Multiply modelview matrix
-   glMultMatrixf(mat);
-}
 static void rectangular(float x, float y, float z, float dx, float dy, float dz, float th)
 {
    float white[] = {1,1,1,1};
@@ -435,13 +421,11 @@ static void car(float x, float y, float z, float r, float dx, float dz)
    wheel(-0.4,-0.2,0.3, 30, 0.15);
    wheel(-0.4,-0.2,-0.3, 30, 0.15);
    // transparent box
-   
    glPopMatrix();
 }
 static void straightRoad(float x, float y, float z, float theta, float w, float l, int i)
 {
 	glPushMatrix();
-
   float white[] = {1,1,1,1};
   float grey[] = {0.5,0.5,0.5,1};
   glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shiny);
@@ -453,40 +437,58 @@ static void straightRoad(float x, float y, float z, float theta, float w, float 
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(1,1);
  
-  glNormal3f(0,1,0);
   glColor3f(0.5,0.5,0.5);
-	glBegin(GL_QUADS);
-	glVertex3f(-w/2,0,0);
-	glVertex3f(w/2,0,0);
-	glVertex3f(w/2,0,-l);
-	glVertex3f(-w/2,0,-l);
-	glEnd();
+  for (float i=0;i>=-l+1;i-=1)
+  {
+    glNormal3f(0,1,0);
+    glBegin(GL_QUADS);
+    glVertex3f(-w/2,0,i);
+    glVertex3f(w/2,0,i);
+    glVertex3f(w/2,0,i-1);
+    glVertex3f(-w/2,0,i-1);
+    glEnd();
+    if (setRoute==1)
+    {
+       *route1 = (node_t) {.val = {Sin(-theta)*(i-1)+x, 0, Cos(-theta)*(i-1)+z}, .next = malloc(sizeof(node_t))};
+       route1 = route1->next;
+    }
+  }
+ //  glNormal3f(0,1,0);
+ //  glColor3f(0.5,0.5,0.5);
+	// glBegin(GL_QUADS);
+	// glVertex3f(-w/2,0,0);
+	// glVertex3f(w/2,0,0);
+	// glVertex3f(w/2,0,-l);
+	// glVertex3f(-w/2,0,-l);
+	// glEnd();
 
-	glDisable(GL_POLYGON_OFFSET_FILL);
-  glNormal3f(0,1,0);
-  glColor3f(1,1,1);
-	glBegin(GL_LINES);
-	glVertex3f(0.9*(w/2),0,0);
-	glVertex3f(0.9*(w/2),0,-l);
-	glEnd();
+	// glDisable(GL_POLYGON_OFFSET_FILL);
+ //  glNormal3f(0,1,0);
+ //  glColor3f(1,1,1);
+	// glBegin(GL_LINES);
+	// glVertex3f(0.9*(w/2),0,0);
+	// glVertex3f(0.9*(w/2),0,-l);
+	// glEnd();
 
-  glColor3f(1,1,1);
-  glNormal3f(0,1,0);
-	glBegin(GL_LINES);
-	glVertex3f(0.9*(-w/2),0,0);
-	glVertex3f(0.9*(-w/2),0,-l);
-	glEnd();
+ //  glColor3f(1,1,1);
+ //  glNormal3f(0,1,0);
+	// glBegin(GL_LINES);
+	// glVertex3f(0.9*(-w/2),0,0);
+	// glVertex3f(0.9*(-w/2),0,-l);
+	// glEnd();
 	glPopMatrix();
-  track_point[i].boundR[0].x=Cos(-theta)*(w/2)+x;
-  track_point[i].boundR[0].z=-Sin(-theta)*(w/2)+z;
-  track_point[i].boundL[0].x=Cos(-theta)*(-w/2)+x;
-  track_point[i].boundL[0].z=-Sin(-theta)*(-w/2)+z;
+  if (setRoute==1){
+    track_point[i].boundR[0].x=Cos(-theta)*(w/2)+x;
+    track_point[i].boundR[0].z=-Sin(-theta)*(w/2)+z;
+    track_point[i].boundL[0].x=Cos(-theta)*(-w/2)+x;
+    track_point[i].boundL[0].z=-Sin(-theta)*(-w/2)+z;
 
-  track_point[i].boundR[1].x=(Cos(-theta)*(w/2)+Sin(-theta)*(-l))+x;
-  track_point[i].boundR[1].z=(-Sin(-theta)*(w/2)+Cos(-theta)*(-l))+z;
-  track_point[i].boundL[1].x=(Cos(-theta)*(-w/2)+Sin(-theta)*(-l))+x;
-  track_point[i].boundL[1].z=(-Sin(-theta)*(-w/2)+Cos(-theta)*(-l))+z;  
-  track_point[i].l = 2;
+    track_point[i].boundR[1].x=(Cos(-theta)*(w/2)+Sin(-theta)*(-l))+x;
+    track_point[i].boundR[1].z=(-Sin(-theta)*(w/2)+Cos(-theta)*(-l))+z;
+    track_point[i].boundL[1].x=(Cos(-theta)*(-w/2)+Sin(-theta)*(-l))+x;
+    track_point[i].boundL[1].z=(-Sin(-theta)*(-w/2)+Cos(-theta)*(-l))+z;  
+    track_point[i].l = 2;
+  }
 }
 static void splineRoad(float x, float y, float z, float theta, float w, float d, float degree, int i)
 {
@@ -511,22 +513,16 @@ static void splineRoad(float x, float y, float z, float theta, float w, float d,
 			glVertex3f((d+w/2)+d*Cos(th-5), 0, d*Sin(th-5));
 			glVertex3f((d+w/2)+d*Cos(th), 0, d*Sin(th));
       if (setRoute==1){
-        track_point[i].boundR[j].x = (Cos(-theta)*((d+w/2)+(d+w)*Cos(th))+Sin(-theta)*((d+w)*Sin(th)))+x;
-        track_point[i].boundR[j].z = (-Sin(-theta)*((d+w/2)+(d+w)*Cos(th))+Cos(-theta)*((d+w)*Sin(th)))+z;
-        track_point[i].boundL[j].x = (Cos(-theta)*((d+w/2)+d*Cos(th))+Sin(-theta)*(d*Sin(th)))+x;
-        track_point[i].boundL[j].z = (-Sin(-theta)*((d+w/2)+d*Cos(th))+Cos(-theta)*(d*Sin(th)))+z;
-
-        track_point[i].boundR[j+1].x = (Cos(-theta)*((d+w/2)+(d+w)*Cos(th-5))+Sin(-theta)*((d+w)*Sin(th-5)))+x;
-        track_point[i].boundR[j+1].z = (-Sin(-theta)*((d+w/2)+(d+w)*Cos(th-5))+Cos(-theta)*((d+w)*Sin(th-5)))+z;
-        track_point[i].boundL[j+1].x = (Cos(-theta)*((d+w/2)+d*Cos(th-5))+Sin(-theta)*(d*Sin(th-5)))+x;
-        track_point[i].boundL[j+1].z = (-Sin(-theta)*((d+w/2)+d*Cos(th-5))+Cos(-theta)*(d*Sin(th-5)))+z;
-        j+=2;
-        track_point[i].l+=2;
+        track_point[i].boundR[j].x = (Cos(-theta)*((d+w/2)+(d+w)*Cos(th-5))+Sin(-theta)*((d+w)*Sin(th-5)))+x;
+        track_point[i].boundR[j].z = (-Sin(-theta)*((d+w/2)+(d+w)*Cos(th-5))+Cos(-theta)*((d+w)*Sin(th-5)))+z;
+        track_point[i].boundL[j].x = (Cos(-theta)*((d+w/2)+d*Cos(th-5))+Sin(-theta)*(d*Sin(th-5)))+x;
+        track_point[i].boundL[j].z = (-Sin(-theta)*((d+w/2)+d*Cos(th-5))+Cos(-theta)*(d*Sin(th-5)))+z;
+        j+=1;
+        track_point[i].l+=1;
         float vector [3] = {(d+w/2)+(d+w/2)*Cos(th-5), 0, (d+w/2)*Sin(th-5)};
         *route1 = (node_t) {.val = {Cos(-theta)*vector[0]+Sin(-theta)*vector[2]+x,0,-Sin(-theta)*vector[0]+Cos(-theta)*vector[2]+z}, .next = malloc(sizeof(node_t))};
         route1 = route1->next;
       }
-			
 		}
 		glEnd();
 	}
@@ -539,16 +535,12 @@ static void splineRoad(float x, float y, float z, float theta, float w, float d,
 			glVertex3f(-(d+w/2)+d*Cos(th+5), 0, d*Sin(th+5));
 			glVertex3f(-(d+w/2)+d*Cos(th), 0, d*Sin(th));
 			if (setRoute==1){
-        track_point[i].boundR[j].x = (Cos(-theta)*(-(d+w/2)+(d+w)*Cos(th))+Sin(-theta)*((d+w)*Sin(th)))+x;
-        track_point[i].boundR[j].z = (-Sin(-theta)*(-(d+w/2)+(d+w)*Cos(th))+Cos(-theta)*((d+w)*Sin(th)))+z;
-        track_point[i].boundL[j].x = (Cos(-theta)*(-(d+w/2)+d*Cos(th))+Sin(-theta)*(d*Sin(th)))+x;
-        track_point[i].boundL[j].z = (-Sin(-theta)*(-(d+w/2)+d*Cos(th))+Cos(-theta)*(d*Sin(th)))+z;
-
-        track_point[i].boundR[j+1].x = (Cos(-theta)*(-(d+w/2)+(d+w)*Cos(th+5))+Sin(-theta)*((d+w)*Sin(th+5)))+x;
-        track_point[i].boundR[j+1].z = (-Sin(-theta)*(-(d+w/2)+(d+w)*Cos(th+5))+Cos(-theta)*((d+w)*Sin(th+5)))+z;
-        track_point[i].boundL[j+1].x = (Cos(-theta)*(-(d+w/2)+d*Cos(th+5))+Sin(-theta)*(d*Sin(th+5)))+x;
-        track_point[i].boundL[j+1].z = (-Sin(-theta)*(-(d+w/2)+d*Cos(th+5))+Cos(-theta)*(d*Sin(th+5)))+z;
-        j+=2;
+        track_point[i].boundR[j].x = (Cos(-theta)*(-(d+w/2)+(d+w)*Cos(th+5))+Sin(-theta)*((d+w)*Sin(th+5)))+x;
+        track_point[i].boundR[j].z = (-Sin(-theta)*(-(d+w/2)+(d+w)*Cos(th+5))+Cos(-theta)*((d+w)*Sin(th+5)))+z;
+        track_point[i].boundL[j].x = (Cos(-theta)*(-(d+w/2)+d*Cos(th+5))+Sin(-theta)*(d*Sin(th+5)))+x;
+        track_point[i].boundL[j].z = (-Sin(-theta)*(-(d+w/2)+d*Cos(th+5))+Cos(-theta)*(d*Sin(th+5)))+z;
+        j+=1;
+        track_point[i].l+=1;
         float vector [3] = {-(d+w/2)+(d+w/2)*Cos(th+5), 0, (d+w/2)*Sin(th+5)};
         *route1 = (node_t) {.val = {Cos(-theta)*vector[0]+Sin(-theta)*vector[2]+x,0,-Sin(-theta)*vector[0]+Cos(-theta)*vector[2]+z}, .next = malloc(sizeof(node_t))};
         route1 = route1->next;
@@ -564,11 +556,6 @@ void StraightRoadGenerator(float* px, float* pz, float theta, float l, float wid
   // update the point for the current track path
 	*px += l*Cos(theta-90);
   *pz += l*Sin(theta-90);	
-  // set the route for the bot car, we only need 1 points for the straightroad
-  if (setRoute==1){
-    *route1 = (node_t) {.val = {*px, 0, *pz}, .next = malloc(sizeof(node_t))};
-    route1 = route1->next;
-  }
   if (i != 20)
   {
     track_point[i].point.x = *px;
@@ -625,6 +612,26 @@ static void track1(float px, float pz, float width)
    }
    
 }
+// static void boundline()
+// {
+//   glPushMatrix();
+//   glColor3f(1,0,0);
+//   for (int i=1;i<20;i++)
+//   {
+//     for (int j=0;j<track_point[i].l-1;j++)
+//     {
+//       glBegin(GL_LINES);
+//       glVertex3f(track_point[i].boundR[j].x,-dim,track_point[i].boundR[j].z);
+//       glVertex3f(track_point[i].boundR[j+1].x,-dim,track_point[i].boundR[j+1].z);
+//       glEnd();
+//       glBegin(GL_LINES);
+//       glVertex3f(track_point[i].boundL[j].x,-dim,track_point[i].boundL[j].z);
+//       glVertex3f(track_point[i].boundL[j+1].x,-dim,track_point[i].boundL[j+1].z);
+//       glEnd();
+//     }
+//   }
+//   glPopMatrix();
+// }
 static void ground()
 {
   float white[] = {1,1,1,1};
@@ -722,9 +729,14 @@ static void sky(float D)
 }
 void idle()
 {
-
-    float sdx = car_s.velocity*(car_s.dx);
-    float sdz = car_s.velocity*(car_s.dz);
+    static double t0 = -1.;
+    double dt, t = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
+    if (t0 < 0.0)
+      t0 = t;
+    dt = t - t0;
+    t0 = t;
+    float sdx = car_s.velocity*dt*(car_s.dx);
+    float sdz = car_s.velocity*dt*(car_s.dz);
     car_s.x+=sdx;
     car_s.z+=sdz;
     // first AI bot's position
@@ -737,16 +749,15 @@ void idle()
     }  
     car1.dx = bot1d[0]/sqrt(pow(bot1d[0],2)+pow(bot1d[1],2));
     car1.dz = bot1d[1]/sqrt(pow(bot1d[0],2)+pow(bot1d[1],2));
-    float dx = car1.velocity*car1.dx;
-    float dz = car1.velocity*car1.dz;
+    float dx = car1.velocity*dt*car1.dx;
+    float dz = car1.velocity*dt*car1.dz;
     car1.x += dx;
     car1.z += dz;
     c = Collide(car_s, car1);
-    // determine if two cars are going to collide with each other
     if (CollideBoundary(car_s, track_point[car_s.track].boundR, track_point[car_s.track].l, track_point[car_s.track].boundL))
     {
-      if (car_s.velocity>=0.05)
-        car_s.velocity-=0.001;
+      if (car_s.velocity>=3)
+        car_s.velocity-=0.06;
       roadmode = abs(roadmode-1);
     }
     if (Collide(car_s, car1))
@@ -756,26 +767,26 @@ void idle()
       if (BumpInto(car_s, car1)==1){
         car_s.x-=20*sdx;
         car_s.z-=20*sdz;
-        if (car_s.velocity>=0.05)
-          car_s.velocity-=0.03;
+        if (car_s.velocity>=3)
+          car_s.velocity-=1.8;
         // direction+=30;
         // float temp = car_s.dx;
         // car_s.dx = car_s.dx*Cos(-30)+car_s.dz*Sin(-30);
         // car_s.dz = -temp*Sin(-30)+car_s.dz*Cos(-30);
         // update car1's next point
-        if (car1.velocity>=sqrt(pow(bot1d[0],2)+pow(bot1d[1],2)))
+        if (car1.velocity*dt>=sqrt(pow(bot1d[0],2)+pow(bot1d[1],2)))
           cur1 = cur1->next;
       }
       else
       {
         car1.x-=25*dx;
         car1.z-=25*dz;
-        if (car1.velocity>=0.05)
-          car1.velocity-=0.03;
+        if (car1.velocity>=3)
+          car1.velocity-=1.8;
       }
     }
     else{
-      if (car1.velocity>=sqrt(pow(bot1d[0],2)+pow(bot1d[1],2)))
+      if (car1.velocity*dt>=sqrt(pow(bot1d[0],2)+pow(bot1d[1],2)))
         cur1 = cur1->next;
     }
 
@@ -788,7 +799,7 @@ void idle()
     }
     else 
     {
-      float track_theta = ((track_point[0].point.x-track_point[car_s.track].point.x)*(car_s.x-track_point[0].point.x)+(track_point[0].point.z-track_point[car_s.track].point.z)*(car_s.z-track_point[0].point.z))/((sqrt(pow(track_point[0].point.x-track_point[car_s.track].point.x,2)+pow(track_point[0].point.z-track_point[car_s.track].point.z,2)))*(sqrt(pow(car_s.x-track_point[0].point.x,2)+pow(car_s.z-track_point[0].point.z,2))));
+      float track_theta = ((track_point[0].point.x-track_point[car_s.track-1].point.x)*(car_s.x-track_point[0].point.x)+(track_point[0].point.z-track_point[car_s.track-1].point.z)*(car_s.z-track_point[0].point.z))/((sqrt(pow(track_point[0].point.x-track_point[car_s.track-1].point.x,2)+pow(track_point[0].point.z-track_point[car_s.track-1].point.z,2)))*(sqrt(pow(car_s.x-track_point[0].point.x,2)+pow(car_s.z-track_point[0].point.z,2))));
       if (track_theta>0)
       {
         car_s.track=1;
@@ -805,7 +816,7 @@ void idle()
     }
     else
     {
-      float track_theta = ((track_point[0].point.x-track_point[car1.track].point.x)*(car1.x-track_point[0].point.x)+(track_point[0].point.z-track_point[car1.track].point.z)*(car1.z-track_point[0].point.z))/((sqrt(pow(track_point[0].point.x-track_point[car1.track].point.x,2)+pow(track_point[0].point.z-track_point[car1.track].point.z,2)))*(sqrt(pow(car1.x-track_point[0].point.x,2)+pow(car1.z-track_point[0].point.z,2))));
+      float track_theta = ((track_point[0].point.x-track_point[car1.track-1].point.x)*(car1.x-track_point[0].point.x)+(track_point[0].point.z-track_point[car1.track-1].point.z)*(car1.z-track_point[0].point.z))/((sqrt(pow(track_point[0].point.x-track_point[car1.track-1].point.x,2)+pow(track_point[0].point.z-track_point[car1.track-1].point.z,2)))*(sqrt(pow(car1.x-track_point[0].point.x,2)+pow(car1.z-track_point[0].point.z,2))));
       if (track_theta>0) 
       {
         car1.track=1;
@@ -813,10 +824,13 @@ void idle()
       }
     }
     // update the speed of the AI's car
-    if ((car_s.track>car1.track && car_s.lap==car1.lap)||car_s.lap>car1.lap)
-      car1.velocity+=0.001;
-    else if ((car_s.track<car1.track && car_s.lap==car1.lap && car1.velocity > 0.05)||(car_s.lap<car1.lap && car1.velocity > 0.05))
-      car1.velocity-=0.001;
+    if ((car_s.lap==car1.lap && car_s.track>=car1.track)||car_s.lap>car1.lap)
+      car1.velocity+=0.02;
+    else
+    {
+      if (car1.velocity > 3)
+        car1.velocity-=0.02;
+    }
   glutPostRedisplay();
 }
 void display()
@@ -918,13 +932,11 @@ void display()
   glPopMatrix();
   car(car_s.x,0.5-dim, car_s.z, 1.0, car_s.dx, car_s.dz);
   car(car1.x,0.5-dim,car1.z, 1.0, car1.dx, car1.dz);
-  
   glDisable(GL_LIGHTING);
   glColor3f(1,0,0);
   glWindowPos2i(5,5);
-  // Print("collide: %d, s:%f %f, bot:%f %f", c, car_s.dx, car_s.dz, car1.dx, car1.dz);
   glWindowPos2i(5,5);
-  Print("Speed %f, road:%d, track:%d %d, %d %d", car_s.velocity*200, roadmode, car_s.lap, car_s.track, car1.lap, car1.track);
+  Print("Speed %f, road:%d, track:%d %d, %d %d", car_s.velocity*5, roadmode, car_s.lap, car_s.track, car1.lap, car1.track);
   glFlush();
   glutSwapBuffers();
 }
@@ -939,11 +951,11 @@ void key(unsigned char ch, int x, int y)
       mode-=1;
    else if (ch=='w')
    {
-      car_s.velocity+=0.05;
+      car_s.velocity+=3;
    }
    else if (ch=='s')
    {  
-      car_s.velocity-=0.05;
+      car_s.velocity-=3;
    }
    else if (ch=='d')
    {
